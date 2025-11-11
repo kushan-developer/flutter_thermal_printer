@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:esc_pos_utils_plus/esc_pos_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:screenshot/screenshot.dart';
@@ -10,7 +10,6 @@ import 'package:screenshot/screenshot.dart';
 import 'printer_manager.dart';
 import 'utils/printer.dart';
 
-export 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 export 'package:flutter_thermal_printer/network/network_printer.dart';
 export 'package:universal_ble/universal_ble.dart';
 
@@ -207,10 +206,10 @@ class FlutterThermalPrinter {
 
       final croppedImage = img.copyCrop(
         image,
-        x: 0,
-        y: startY,
-        width: totalWidth,
-        height: actualHeight,
+        0,
+        startY,
+        totalWidth,
+        actualHeight,
       );
 
       final raster = generator.imageRaster(
@@ -287,13 +286,8 @@ class FlutterThermalPrinter {
             : startY + chunkHeight;
         final actualHeight = endY - startY;
 
-        final croppedImage = img.copyCrop(
-          imagebytes,
-          x: 0,
-          y: startY,
-          width: totalWidth,
-          height: actualHeight,
-        );
+        final croppedImage =
+            img.copyCrop(imagebytes, 0, startY, totalWidth, actualHeight);
 
         raster += ticket.imageRaster(
           croppedImage,
