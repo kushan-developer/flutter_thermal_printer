@@ -83,45 +83,47 @@ class PrinterManager {
     await _devicesStream.close();
   }
 
-  /// Connect to a printer device
   Future<bool> connect(Printer device) async {
-    if (device.connectionType == ConnectionType.USB) {
-      if (Platform.isWindows) {
-        // Windows USB connection - device is already available, no connection needed
-        return true;
-      } else {
-        return FlutterThermalPrinterPlatform.instance.connect(device);
-      }
-    } else if (device.connectionType == ConnectionType.BLE) {
-      try {
-        if (device.address == null) {
-          log('Device address is null');
-          return false;
-        }
-        final isConnected =
-            (await UniversalBle.getConnectionState(device.address!) ==
-                BleConnectionState.connected);
-        if (isConnected) {
-          log('Device ${device.name} is already connected');
-          return true;
-        }
-
-        log('Connecting to BLE device ${device.name} at ${device.address}');
-
-        // Connect using universal_ble for all platforms including Windows
-        await device.connect();
-
-        // Wait a moment to establish connection
-        await Future.delayed(const Duration(seconds: 10));
-        return (await UniversalBle.getConnectionState(device.address!) ==
-            BleConnectionState.connected);
-      } catch (e) {
-        log('Failed to connect to BLE device: $e');
-        return false;
-      }
-    }
-    return false;
+  if (device.connectionType == ConnectionType.USB) {
+    return Platform.isWindows ? true : FlutterThermalPrinterPlatform.instance.connect(device);
   }
+
+  if (device.connectionType == ConnectionType.BLE) {
+    try {
+      if (device.address == null) return false;
+
+      // 1. Check if already connected
+      final initialState = await UniversalBle.getConnectionState(device.address!);
+      if (initialState == BleConnectionState.connected) return true;
+
+      // 2. Trigger connection
+      await device.connect();
+
+      // 3. POLLING LOGIC: Check state every 500ms (Max 5 seconds)
+      bool isConnected = false;
+      for (int i = 0; i < 10; i++) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        final currentState = await UniversalBle.getConnectionState(device.address!);
+        if (currentState == BleConnectionState.connected) {
+          isConnected = true;
+          break;
+        }
+      }
+
+      if (isConnected) {
+        // OPTIMIZATION: Request larger MTU for those 100+ items
+        // This speeds up the physical data transfer over Bluetooth
+        try {
+          await UniversalBle.requestMtu(device.address!, 512);
+        } catch (_) {} 
+        return true;
+      }
+    } catch (e) {
+      log('Connection Error: $e');
+    }
+  }
+  return false;
+}
 
   /// Check if a device is connected
   Future<bool> isConnected(Printer device) async {
