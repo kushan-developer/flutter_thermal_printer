@@ -99,9 +99,9 @@ class PrinterManager {
       // 2. Trigger connection
       await device.connect();
 
-      // 3. POLLING LOGIC: Check state every 500ms (Max 5 seconds)
+      // 3. POLLING LOGIC: Check state every 500ms (Max 8 seconds)
       bool isConnected = false;
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 16; i++) {
         await Future.delayed(const Duration(milliseconds: 500));
         final currentState = await UniversalBle.getConnectionState(device.address!);
         if (currentState == BleConnectionState.connected) {
